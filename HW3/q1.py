@@ -7,7 +7,6 @@ c = np.array([[[4, 0], [0, 2]], [[1, 0], [0, 3]], [[2, 0], [0, 2]]])
 w = np.array([0.5, 0.5])
 
 sample_size = np.array([100, 1000, 10000, 20000])
-# create differnt labels (p) with respect to the sample size
 p = np.array([0.6 , 0.4])
 
 labels = np.random.choice([0, 1], size=np.sum(sample_size), p=p)
@@ -37,7 +36,7 @@ def classifier(x, threshold, m, c):
 validation_samples = samples[-sample_size[3]:].T
 validation_labels = labels[-sample_size[3]:]
 
-thresholds = np.arange(0, 10, 1)
+thresholds = np.arange(0, 1, 0.1)
 results = np.zeros(sample_size[3])
 tp = np.zeros(len(thresholds))
 fp = np.zeros(len(thresholds))
@@ -79,6 +78,7 @@ for i in range(sample_size[3]):
     print('Classifying:', i, '/', sample_size[3], end='\r')
 p_error_theoritical = (fn_theoritical + fp_theoritical) / sample_size[3]
 print('Theoritical P-Error: ', p_error_theoritical)
+print('Theoritical Threshold: ', p[0]/p[1])
 plt.figure()
 plt.plot(fp_rate, tp_rate, fp_rate[int(np.argmin(p_error))], tp_rate[int(np.argmin(p_error))], 'gx', fp_theoritical / np.sum(validation_labels == 0), tp_theoritical / np.sum(validation_labels == 1), 'rx')
 plt.xlabel('False Alarm Rate')
@@ -113,11 +113,44 @@ training_labels = labels[sample_size[0] + sample_size[1]:-sample_size[3]]
 est_m = np.zeros((2, 2))
 est_c = np.zeros((2, 2, 2))
 est_p = np.zeros(2)
-
-for i in range(2):
+for i in range(2):   
     est_m[i] = np.mean(training_samples[:, training_labels == i], axis=1)
     est_c[i] = np.cov(training_samples[:, training_labels == i])
 
 est_p[0] = np.sum(training_labels == 0) / training_labels.shape[0]
 est_p[1] = np.sum(training_labels == 1) / training_labels.shape[0]
 print(f"Estimated m: {est_m} \nEstimated c: {est_c} \nEstimated p: {est_p}")
+r = int(10)
+m_candidates = []
+for i in np.arange(-r, r, r/10):
+    for j in np.arange(-r, r, r/10):
+        m_candidates.append([i - r/2, j - r/2])
+
+c_candidates = []
+
+for i in np.arange(-r, r, r/10):
+    for j in np.arange(-r, r, r/10):
+        for k in np.arange(-r, r, r/10):
+            for l in np.arange(-r, r, r/10):
+                c_candidates.append([[i - r/2, j - r/2 + 0.1], [k - r/2 + 0.1, l - r/2]])
+
+likelihood = []
+max_likelihood = 0
+mle_m_best = np.zeros((2, 2))
+mle_c_best = np.zeros((2, 2, 2))
+
+for i in range(len(m_candidates)):
+    for j in range(len(c_candidates)):
+        print(f"Progress: {i * len(c_candidates) + j} / {len(m_candidates) * len(c_candidates)}", end='\r')
+        area = 0
+        for l in range(2):
+            for k in range(len(training_samples)):
+                if(training_labels[k] == l):
+                    area += cal_prob(training_samples[:, k], m_candidates[i], c_candidates[j])
+            if area > max_likelihood:
+                max_likelihood = area
+                mle_m_best[l] = m_candidates[i]
+                mle_c_best[l] = c_candidates[j]
+
+
+print(f"Best m: {mle_m_best} \nBest c: {mle_c_best}")
