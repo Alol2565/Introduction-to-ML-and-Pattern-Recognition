@@ -18,7 +18,7 @@ class MLP:
         self.model.fit(X, y, epochs=10, batch_size=128, verbose=0)
 
     def predict(self, X):
-        return self.model.predict(X)
+        return self.model.predict(X, verbose=0)
 
     def score(self, X, y):
         return self.model.evaluate(X, y, batch_size=128, verbose=0)[1]
